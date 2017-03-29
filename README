@@ -1,3 +1,6 @@
+Initial code is from https://sourceforge.net/projects/tier/files/btier-2.0.1,
+just make it compile on kernel 4.4.54.
+
 BTIER 2.x differs from BTIER 1.X in several ways.
 The most significant change is that BTIER 2.x no longer directly 
 supports the use of files as backend devices.
