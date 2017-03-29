@@ -95,7 +95,7 @@ static int tier_moving_io(struct tier_device *dev,
 			cur_chunk = BLKSIZE - done;
 
 		/* if no splits, and whole block is in one bio */
-		if (1 == atomic_read(&bio->bi_remaining) && 
+		if (1 == atomic_read(&bio->__bi_remaining) && 
 		    cur_chunk == BLKSIZE) {
 			set_debug_info(dev, BIO);
 			res = submit_bio_wait(rw, bio);
@@ -566,7 +566,7 @@ static void tiered_dev_access(struct tier_device *dev, struct bio_task *bt)
 			bio_advance(bio, size_in_blk);
 
 			/* total splits is 0 and it's now last blk of bio.*/
-			if (1 == atomic_read(&bio->bi_remaining) && 
+			if (1 == atomic_read(&bio->__bi_remaining) && 
 			    cur_blk == end_blk) {
 				if (dev->inerror)
 					bio_endio(bt->parent_bio, -EIO);
@@ -577,9 +577,9 @@ static void tiered_dev_access(struct tier_device *dev, struct bio_task *bt)
 			}
 
 			/* total splits > 0 and it's now last blk of bio */
-			if (atomic_read(&bio->bi_remaining) > 1 && 
+			if (atomic_read(&bio->__bi_remaining) > 1 && 
 			    cur_blk == end_blk) {
-				atomic_dec(&bio->bi_remaining);
+				atomic_dec(&bio->__bi_remaining);
 				goto bio_submitted_lastbio;
 			}
 
@@ -613,7 +613,7 @@ static void tiered_dev_access(struct tier_device *dev, struct bio_task *bt)
 				cur_chunk = size_in_blk - done;
 	
 			/* if no splits, and it's now last blk of bio */
-			if (1 == atomic_read(&bio->bi_remaining) && 
+			if (1 == atomic_read(&bio->__bi_remaining) && 
 			    cur_blk == end_blk && 
 			    cur_chunk == size_in_blk) {
 				start = (binfo->offset + offset_in_blk) >> 9;
