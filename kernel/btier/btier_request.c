@@ -10,6 +10,17 @@
 
 #include "btier.h"
 
+static void bio_endio_compat(struct bio *bio, int error)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
+       bio->bi_error = error;
+       bio_endio(bio);
+#else
+       bio_endio(bio, error);
+#endif
+}
+
+
 struct kmem_cache *bio_task_cache;
 
 static void tier_submit_bio(struct tier_device *dev,
@@ -441,9 +452,9 @@ static void tier_submit_and_wait_meta(struct bio_meta *bm)
 
 	if(bm->discard || bm->flush) {
 		if (bm->ret) {
-			bio_endio(bm->parent_bio, -EIO);
+			bio_endio_compat(bm->parent_bio, -EIO);
 		} else
-			bio_endio(bm->parent_bio, 0);
+			bio_endio_compat(bm->parent_bio, 0);
 
 		atomic_dec(&dev->aio_pending);
 		wake_up(&dev->aio_event);
@@ -515,9 +526,9 @@ static void request_endio(struct bio *bio, int err)
 	struct tier_device *dev = bt->dev;
 
 	if (err) {
-		bio_endio(bt->parent_bio, -EIO);
+		bio_endio_compat(bt->parent_bio, -EIO);
 	} else
-		bio_endio(bt->parent_bio, 0);
+		bio_endio_compat(bt->parent_bio, 0);
 
 	atomic_dec(&dev->aio_pending);
 	wake_up(&dev->aio_event);
@@ -569,9 +580,9 @@ static void tiered_dev_access(struct tier_device *dev, struct bio_task *bt)
 			if (1 == atomic_read(&bio->__bi_remaining) && 
 			    cur_blk == end_blk) {
 				if (dev->inerror)
-					bio_endio(bt->parent_bio, -EIO);
+					bio_endio_compat(bt->parent_bio, -EIO);
 				else
-					bio_endio(bt->parent_bio, 0);
+					bio_endio_compat(bt->parent_bio, 0);
 				
 				goto bio_done;
 			}
@@ -595,7 +606,7 @@ static void tiered_dev_access(struct tier_device *dev, struct bio_task *bt)
 				 * couldn't allocate, error.
 				 * need more error handling here. 
 				 */
-				bio_endio(bt->parent_bio, -EIO);
+				bio_endio_compat(bt->parent_bio, -EIO);
 				goto bio_done;
 			}
 		}
