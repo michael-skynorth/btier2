@@ -383,7 +383,11 @@ static ssize_t tier_attr_migration_policy_store(struct tier_device *dev,
 	memcpy(devicename, a, p - a);
 	if (0 !=
 	    strcmp(devicename,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,19,0))
+		   dev->backdev[devicenr]->fds->f_path.dentry->d_name.name)) {
+#else
 		   dev->backdev[devicenr]->fds->f_dentry->d_name.name)) {
+#endif
 		kfree(devicename);
 		goto end_error;
 	}
@@ -608,7 +612,11 @@ static ssize_t tier_attr_migration_policy_show(struct tier_device *dev,
 			    as_sprintf
 			    ("%7s %20s %15s %15s\n%7u %20s %15u %15u\n", "tier",
 			     "device", "max_age", "hit_collecttime", i,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,19,0))
+			     dev->backdev[i]->fds->f_path.dentry->d_name.name,
+#else
 			     dev->backdev[i]->fds->f_dentry->d_name.name,
+#endif
 			     dev->backdev[i]->devmagic->dtapolicy.max_age,
 			     dev->backdev[i]->devmagic->dtapolicy.
 			     hit_collecttime);
@@ -616,7 +624,11 @@ static ssize_t tier_attr_migration_policy_show(struct tier_device *dev,
 			msg2 =
 			    as_sprintf("%s%7u %20s %15u %15u\n", msg,
 				       i,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,19,0))
+				       dev->backdev[i]->fds->f_path.dentry->
+#else
 				       dev->backdev[i]->fds->f_dentry->
+#endif
 				       d_name.name,
 				       dev->backdev[i]->devmagic->dtapolicy.
 				       max_age,
@@ -700,6 +712,16 @@ static ssize_t tier_attr_device_usage_show(struct tier_device *dev, char *buf)
                     btier_div(dev->backdev[i]->devmagic->total_reads, devblocks);
                 dev->backdev[i]->devmagic->average_writes =
                     btier_div(dev->backdev[i]->devmagic->total_writes, devblocks);
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,19,0))
+		line =
+		    as_sprintf
+		    ("%7u %20s %15llu %15llu %15u %15u %15llu %15llu\n", i,
+		    dev->backdev[i]->fds->f_path.dentry->d_name.name, devblocks,
+		    allocated, dev->backdev[i]->devmagic->average_reads,
+		    dev->backdev[i]->devmagic->average_writes,
+		    dev->backdev[i]->devmagic->total_reads,
+		    dev->backdev[i]->devmagic->total_writes);
+#else
 		line =
 		    as_sprintf
 		    ("%7u %20s %15llu %15llu %15u %15u %15llu %15llu\n", i,
@@ -708,6 +730,7 @@ static ssize_t tier_attr_device_usage_show(struct tier_device *dev, char *buf)
 		     dev->backdev[i]->devmagic->average_writes,
 		     dev->backdev[i]->devmagic->total_reads,
 		     dev->backdev[i]->devmagic->total_writes);
+#endif
 		lines[i + 1] = line;
 		spin_unlock(&dev->backdev[i]->magic_lock);
 	}
